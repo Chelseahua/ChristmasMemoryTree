@@ -1,72 +1,47 @@
-# 🎄 Grand Luxury Interactive 3D Christmas Tree
+🎄 Christmas Memory Tree
 
-> 一个基于 **React**, **Three.js (R3F)** 和 **AI 手势识别** 的高保真 3D 圣诞树 Web 应用。
+A magical 3D holiday gift experience — decorate a Christmas tree with your own memories.
 
-这个项目不仅仅是一棵树，它是一个承载记忆的交互式画廊。成百上千个粒子、璀璨的彩灯和悬浮的拍立得照片共同组成了一棵奢华的圣诞树。用户可以通过手势控制树的形态（聚合/散开）和视角旋转，体验电影级的视觉盛宴。
+Christmas Memory Tree is an immersive WebGL experience that lets users upload personal photos, customize ornaments and lighting themes, and build a beautifully unique memory tree to share with loved ones for the holidays. 🎁✨
 
-![Project Preview](public/preview.png)
-*(注：建议在此处上传一张你的项目运行截图)*
+✨ Features
 
-## ✨ 核心特性
+(1) Upload personal photos → automatically placed as Polaroid ornaments
 
-* **极致视觉体验**：由 45,000+ 个发光粒子组成的树身，配合动态光晕 (Bloom) 和辉光效果，营造梦幻氛围。
-* **记忆画廊**：照片以“拍立得”风格悬浮在树上，每一张都是一个独立的发光体，支持双面渲染。
-* **AI 手势控制**：无需鼠标，通过摄像头捕捉手势即可控制树的形态（聚合/散开）和视角旋转。
-* **丰富细节**：包含动态闪烁的彩灯、飘落的金银雪花、以及随机分布的圣诞礼物和糖果装饰。
-* **高度可定制**：**支持用户轻松替换为自己的照片，并自由调整照片数量。**
+Tap any photo to view it larger, flip the card, and
+write a personalized memo or holiday message ✍️❤️
+→ Makes every ornament a mini memory capsule
 
-## 🛠️ 技术栈
+(2) Gesture Interaction Support (Webcam-based hand tracking)
 
-* **框架**: React 18, Vite
-* **3D 引擎**: React Three Fiber (Three.js)
-* **工具库**: @react-three/drei, Maath
-* **后期处理**: @react-three/postprocessing
-* **AI 视觉**: MediaPipe Tasks Vision (Google)
+Hand open/close detection already integrated
 
-## 🚀 快速开始
+Future gestures trigger: lighting, rotation, celebration mode
 
-### 1. 环境准备
-确保你的电脑已安装 [Node.js](https://nodejs.org/) (建议 v18 或更高版本)。
+(3) 4 preset holiday themes
 
-### 2. 安装依赖
-在项目根目录下打开终端，运行：```bash npm install
-### 3. 启动项目
-npm run dev
-### 🖼️ 自定义照片
-### 1. 准备照片
-找到项目目录下的 public/photos/ 文件夹。
+Gold Night · Santa Red · Evergreen Forest · Minimal Snow
 
-顶端大图/封面图：命名为 top.jpg（将显示在树顶的立体五角星上）。
+Full color customization
 
-树身照片：命名为 1.jpg, 2.jpg, 3.jpg ... 依次类推。
+Baubles · Polaroid border · Lights · Background atmosphere
 
-建议：使用正方形或 4:3 比例的图片，文件大小不宜过大（建议单张 500kb 以内以保证流畅度）
-### 2. 替换照片
-直接将你自己的照片复制到 public/photos/ 文件夹中，覆盖原有的图片即可。请保持文件名格式不变（1.jpg, 2.jpg 等）。
-### 3. 修改照片数量 (增加或减少)
-如果你放入了更多照片（例如从默认的 31 张增加到 100 张），需要修改代码以通知程序加载它们。
-打开文件：src/App.tsx
-找到大约 第 19 行 的代码：// --- 动态生成照片列表 (top.jpg + 1.jpg 到 31.jpg) ---
-const TOTAL_NUMBERED_PHOTOS = 31; // <--- 修改这个数字！
-### 🖐️ 手势控制说明
-* **本项目内置了 AI 手势识别系统，请站在摄像头前进行操作（屏幕右下角有 DEBUG 按钮可查看摄像头画面）**：
-🖐 张开手掌 (Open Palm)	Disperse (散开)	圣诞树炸裂成漫天飞舞的粒子和照片
-✊ 握紧拳头 (Closed Fist)	Assemble (聚合)	所有元素瞬间聚合成一棵完美的圣诞树
-👋 手掌左右移动	旋转视角	手向左移，树向左转；手向右移，树向右转
-👋 手掌上下移动	俯仰视角	手向上移，视角抬高；手向下移，视角降低
-### ⚙️ 进阶配置
-* **如果你熟悉代码，可以在 src/App.tsx 中的 CONFIG 对象里调整更多视觉参数**：
-  const CONFIG = {
-  colors: { ... }, // 修改树、灯光、边框的颜色
-  counts: {
-    foliage: 15000,   // 修改树叶粒子数量 (配置低可能会卡)
-    ornaments: 300,   // 修改悬挂的照片/拍立得数量
-    lights: 400       // 修改彩灯数量
-  },
-  tree: { height: 22, radius: 9 }, // 修改树的大小
-  // ...
-};
-### 📄 License
-MIT License. Feel free to use and modify for your own holiday celebrations!
-### Merry Christmas! 🎄✨
+(4) Realistic 3D rendering
 
+Metallic ornament reflections, soft glow lighting, particles
+
+Responsive UI for desktop and mobile
+
+A Christmas tree filled with memories, stories, and love.
+
+
+🎁 Creator
+
+Designed & Developed by Chelsea Hua
+
+“Every photo is a story — let your memories shine this Christmas.” ✨
+
+
+GIF demo animation for improved visual storytelling
+
+SEO-friendly Topics + Repository description update
