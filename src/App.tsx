@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect, Suspense } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import {
   OrbitControls,
   Environment,
@@ -439,6 +439,10 @@ const Experience = ({ sceneState, cameraSpeed, photos, onPhotoClick, config, isS
   onToggleSnow: () => void
 }) => {
   const controlsRef = useRef<any>(null);
+  const { size } = useThree();
+  const isPortrait = size.width < size.height;
+  const isMobile = size.width < 768;
+
   useFrame(() => {
     if (controlsRef.current) {
       controlsRef.current.setAzimuthalAngle(controlsRef.current.getAzimuthalAngle() + cameraSpeed.x);
@@ -451,9 +455,13 @@ const Experience = ({ sceneState, cameraSpeed, photos, onPhotoClick, config, isS
     }
   });
 
+  // Adjust camera position based on screen size/orientation
+  const cameraZ = isPortrait ? 75 : 45; // Zoom out more on portrait
+  const cameraY = isPortrait ? 10 : 5;
+
   return (
     <>
-      <PerspectiveCamera makeDefault position={[0, 5, 45]} fov={50} />
+      <PerspectiveCamera makeDefault position={[0, cameraY, cameraZ]} fov={50} />
       <OrbitControls
         ref={controlsRef}
         enablePan={false}
@@ -486,7 +494,7 @@ const Experience = ({ sceneState, cameraSpeed, photos, onPhotoClick, config, isS
       <pointLight position={[-20, 10, -20]} intensity={50} color={config.colors.gold} />
       <pointLight position={[0, -10, 10]} intensity={30} color={config.colors.red} />
 
-      <group position={[0, -5, 0]}>
+      <group position={[0, isMobile ? 0 : -5, 0]}>
         <OrnamentTree state={sceneState} config={config} />
         <Suspense fallback={null}>
           {photos.length > 0 && <PhotoOrnaments state={sceneState} photos={photos} onPhotoClick={onPhotoClick} config={config} />}
@@ -614,17 +622,18 @@ const GestureController = ({ onGesture, onMove, onStatus }: any) => {
 
   return (
     <>
-      <video ref={videoRef} style={{ opacity: 0.6, position: 'fixed', top: 0, right: 0, width: '320px', zIndex: 100, pointerEvents: 'none', transform: 'scaleX(-1)' }} playsInline muted autoPlay />
-      <canvas ref={canvasRef} style={{ position: 'fixed', top: 0, right: 0, width: '320px', height: 'auto', zIndex: 101, pointerEvents: 'none', transform: 'scaleX(-1)' }} />
+      <video ref={videoRef} style={{ opacity: 0.6, position: 'fixed', top: 0, right: 0, width: 'clamp(120px, 25vw, 320px)', zIndex: 100, pointerEvents: 'none', transform: 'scaleX(-1)' }} playsInline muted autoPlay />
+      <canvas ref={canvasRef} style={{ position: 'fixed', top: 0, right: 0, width: 'clamp(120px, 25vw, 320px)', height: 'auto', zIndex: 101, pointerEvents: 'none', transform: 'scaleX(-1)' }} />
     </>
   );
 };
 
 // --- App Entry ---
 export default function GrandTreeApp() {
-  const [sceneState, setSceneState] = useState<'CHAOS' | 'FORMED'>('CHAOS');
+  const [sceneState, setSceneState] = useState<'CHAOS' | 'FORMED'>('FORMED');
   const [cameraSpeed, setCameraSpeed] = useState({ x: 0, y: 0 });
   const [aiStatus, setAiStatus] = useState("INITIALIZING...");
+  const [isUploading, setIsUploading] = useState(false);
   // debugMode removed
   const [photos, setPhotos] = useState<string[]>([]);
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
@@ -636,6 +645,59 @@ export default function GrandTreeApp() {
 
   // Snow state
   const [isSnowing, setIsSnowing] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  // Responsive state
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Shake to Snow Effect
+  useEffect(() => {
+    let lastX: number | null = null;
+    let lastY: number | null = null;
+    let lastZ: number | null = null;
+    let timeout: any;
+
+    const handleMotion = (e: DeviceMotionEvent) => {
+      if (!e.accelerationIncludingGravity) return;
+      const { x, y, z } = e.accelerationIncludingGravity;
+      if (x === null || y === null || z === null) return;
+
+      if (lastX !== null && lastY !== null && lastZ !== null) {
+        const deltaX = Math.abs(x - lastX);
+        const deltaY = Math.abs(y - lastY);
+        const deltaZ = Math.abs(z - lastZ);
+
+        // Sensitivity threshold for shake
+        if (deltaX + deltaY + deltaZ > 25) {
+          setIsSnowing(true);
+          clearTimeout(timeout);
+          timeout = setTimeout(() => setIsSnowing(false), 5000);
+        }
+      }
+      lastX = x;
+      lastY = y;
+      lastZ = z;
+    };
+
+    // Check if DeviceMotionEvent is defined (for SSR/non-mobile safety)
+    if (typeof window !== 'undefined' && window.DeviceMotionEvent) {
+      window.addEventListener('devicemotion', handleMotion);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined' && window.DeviceMotionEvent) {
+        window.removeEventListener('devicemotion', handleMotion);
+      }
+      clearTimeout(timeout);
+    };
+  }, []);
 
   // Dynamic Config
   const config = useMemo(() => {
@@ -650,8 +712,17 @@ export default function GrandTreeApp() {
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const newPhotos = Array.from(e.target.files).map(file => URL.createObjectURL(file));
+      setIsUploading(true);
+      const files = Array.from(e.target.files);
+
+      // Load photos immediately
+      const newPhotos = files.map(file => URL.createObjectURL(file));
       setPhotos(prev => [...prev, ...newPhotos]);
+
+      // Keep toast visible for 3 seconds
+      setTimeout(() => {
+        setIsUploading(false);
+      }, 3000);
     }
   };
 
@@ -683,18 +754,19 @@ export default function GrandTreeApp() {
       {/* Merry Christmas Text */}
       <div style={{
         position: 'absolute',
-        top: '50%',
-        left: '10%',
-        transform: 'translateY(-50%)',
+        top: isMobile ? '15%' : '50%',
+        left: isMobile ? '50%' : '10%',
+        transform: isMobile ? 'translate(-50%, 0)' : 'translateY(-50%)',
         zIndex: 10,
         pointerEvents: 'none',
         textAlign: 'center',
         opacity: sceneState === 'CHAOS' ? 1 : 0,
         transition: 'opacity 2s ease-in-out', // Slow fade
+        width: isMobile ? '100%' : 'auto',
       }}>
         <h1 style={{
           fontFamily: '"Mountains of Christmas", serif',
-          fontSize: '4rem', // Reduced from 6rem
+          fontSize: 'clamp(3rem, 10vw, 6rem)', // Fluid typography
           fontWeight: 700,
           color: '#FFD700',
           margin: 0,
@@ -703,6 +775,16 @@ export default function GrandTreeApp() {
         }}>
           Merry<br />Christmas
         </h1>
+        <p style={{
+          fontFamily: 'Avenir, sans-serif',
+          fontSize: isMobile ? '14px' : '16px',
+          color: 'rgba(255, 255, 255, 0.8)',
+          marginTop: '10px',
+          fontStyle: 'italic',
+          textShadow: '0 2px 4px rgba(0,0,0,0.5)'
+        }}>
+          Try open, close, and move your palm
+        </p>
       </div>
 
       {/* Settings Panel */}
@@ -711,62 +793,147 @@ export default function GrandTreeApp() {
         onThemeChange={setSelectedTheme}
         customColors={customColors}
         onCustomColorsChange={setCustomColors}
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        isMobile={isMobile}
       />
 
-      {/* UI - Stats (Elegant) */}
-      <div style={{ position: 'absolute', bottom: '40px', left: '40px', color: '#888', zIndex: 10, fontFamily: 'Times New Roman, serif', userSelect: 'none' }}>
-        <div style={{ marginBottom: '20px' }}>
-          <p style={{ fontSize: '15px', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '8px', color: '#666' }}>Memories</p>
-          <p style={{ fontSize: '28px', color: '#FFD700', margin: 0, textShadow: '0 0 10px rgba(255, 215, 0, 0.3)', marginBottom: '15px' }}>
-            {photos.length} <span style={{ fontSize: '15px', color: '#888', fontStyle: 'italic' }}>Moments</span>
-          </p>
+      {/* Customize Button (Responsive Position) */}
+      <button
+        onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+        style={{
+          position: 'fixed',
+          zIndex: 300,
+          padding: '12px 40px', // Match Upload button padding
+          backgroundColor: 'rgba(255, 215, 0, 0.1)',
+          border: '1px solid rgba(255, 215, 0, 0.3)',
+          color: '#FFD700',
+          fontFamily: 'Times New Roman, serif',
+          fontSize: '14px',
+          cursor: 'pointer',
+          textTransform: 'uppercase',
+          backdropFilter: 'blur(10px)',
+          transition: 'all 0.5s',
+          letterSpacing: '4px',
+          borderRadius: '2px', // Match Upload button radius
+          // Desktop: Top Left, Mobile: Bottom Center (Right side)
+          top: isMobile ? 'auto' : '40px',
+          left: isMobile ? 'auto' : (isSettingsOpen ? 'min(300px, 70vw)' : '40px'),
+          bottom: isMobile ? '40px' : 'auto',
+          right: isMobile ? 'calc(50% - 160px)' : 'auto', // Offset from center
+          width: isMobile ? '150px' : 'auto',
+          height: '50px',
+          boxSizing: 'border-box',
+          textAlign: 'center',
+          display: (isMobile && isSettingsOpen) ? 'none' : 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          whiteSpace: 'nowrap'
+        }}
+      >
+        {isSettingsOpen ? '✕' : 'CUSTOMIZE'}
+      </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            <input
-              type="file"
-              multiple
-              accept="image/*"
-              id="photo-upload"
-              style={{ display: 'none' }}
-              onChange={handleUpload}
-            />
-            <label htmlFor="photo-upload" style={{
-              padding: '12px 40px', // Match Assemble button padding
-              backgroundColor: 'rgba(255, 215, 0, 0.1)',
-              border: '1px solid rgba(255, 215, 0, 0.3)',
-              color: '#FFD700',
-              fontFamily: 'Times New Roman, serif',
-              fontSize: '14px', // Match Assemble button font size
-              letterSpacing: '4px', // Match Assemble button letter spacing
-              textTransform: 'uppercase',
-              cursor: 'pointer',
-              backdropFilter: 'blur(10px)',
-              transition: 'all 0.5s',
+      {/* UI - Stats & Buttons Container */}
+      <div style={{
+        position: 'absolute',
+        bottom: isMobile ? '100px' : '40px',
+        left: '40px',
+        right: '40px',
+        zIndex: 10,
+        display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
+        justifyContent: 'space-between',
+        alignItems: isMobile ? 'flex-start' : 'flex-end',
+        gap: '20px',
+        pointerEvents: 'none'
+      }}>
+        {/* Stats & Upload */}
+        <div style={{ pointerEvents: 'auto', fontFamily: 'Times New Roman, serif', userSelect: 'none', width: isMobile ? '100%' : 'auto' }}>
+          <div style={{ marginBottom: isMobile ? '10px' : '0', textAlign: isMobile ? 'center' : 'left' }}>
+            <p style={{ fontSize: '15px', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '8px', color: '#666' }}>Memories</p>
+            <p style={{ fontSize: '28px', color: '#FFD700', margin: 0, textShadow: '0 0 10px rgba(255, 215, 0, 0.3)', marginBottom: '15px' }}>
+              {photos.length} <span style={{ fontSize: '15px', color: '#888', fontStyle: 'italic' }}>Moments</span>
+            </p>
+
+            {/* Upload Button */}
+            <div style={{
               display: 'flex',
               alignItems: 'center',
-              borderRadius: '2px'
+              gap: '15px',
+              // Mobile: Fixed at bottom center
+              position: isMobile ? 'fixed' : 'static',
+              bottom: isMobile ? '40px' : 'auto',
+              left: isMobile ? '50%' : 'auto',
+              transform: isMobile ? 'translateX(-100%) translateX(-10px)' : 'none', // Left of center
+              zIndex: isMobile ? 300 : 'auto'
             }}>
-              UPLOAD PHOTOS
-            </label>
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                id="photo-upload"
+                style={{ display: 'none' }}
+                onChange={handleUpload}
+              />
+              <label htmlFor="photo-upload" style={{
+                padding: '12px 40px',
+                backgroundColor: 'rgba(255, 215, 0, 0.1)',
+                border: '1px solid rgba(255, 215, 0, 0.3)',
+                color: '#FFD700',
+                fontFamily: 'Times New Roman, serif',
+                fontSize: '14px',
+                letterSpacing: '4px',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                backdropFilter: 'blur(10px)',
+                transition: 'all 0.5s',
+                display: 'flex',
+                alignItems: 'center',
+                borderRadius: '2px',
+                whiteSpace: 'nowrap',
+                width: isMobile ? '150px' : 'auto',
+                height: '50px',
+                boxSizing: 'border-box',
+                justifyContent: 'center'
+              }}>
+                UPLOAD
+              </label>
+            </div>
           </div>
         </div>
-        {/* 
-        <div>
-          <p style={{ fontSize: '10px', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '8px', color: '#666' }}>Ornaments</p>
-          <p style={{ fontSize: '28px', color: '#C0C0C0', margin: 0, textShadow: '0 0 10px rgba(192, 192, 192, 0.2)' }}>
-            {(config.counts.foliage).toLocaleString()} <span style={{ fontSize: '12px', color: '#888', fontStyle: 'italic' }}>Spheres</span>
-          </p>
-        </div> 
-        */}
-      </div>
 
-      {/* UI - Buttons (Minimalist) */}
-      <div style={{ position: 'absolute', bottom: '40px', right: '40px', zIndex: 10, display: 'flex', gap: '15px' }}>
-
-
-        <button onClick={() => setSceneState(s => s === 'CHAOS' ? 'FORMED' : 'CHAOS')} style={{ padding: '12px 40px', backgroundColor: 'rgba(255, 215, 0, 0.1)', border: '2px solid rgba(255, 215, 0, 0.3)', color: '#FFD700', fontFamily: 'Times New Roman, serif', fontSize: '14px', letterSpacing: '4px', textTransform: 'uppercase', cursor: 'pointer', backdropFilter: 'blur(10px)', transition: 'all 0.5s' }}>
-          {sceneState === 'CHAOS' ? 'Assemble' : 'Disperse'}
-        </button>
+        {/* Action Buttons (Assemble) */}
+        <div style={{
+          pointerEvents: 'auto',
+          display: 'flex',
+          gap: '15px',
+          // Mobile: Top Right below camera
+          position: isMobile ? 'fixed' : 'static',
+          top: isMobile ? 'calc(clamp(120px, 25vw, 320px) * 0.75 + 20px)' : 'auto', // Approx height of camera (4:3 ratio) + padding
+          right: isMobile ? '0' : 'auto', // Align with camera right edge
+          zIndex: isMobile ? 300 : 'auto',
+          width: isMobile ? 'clamp(120px, 25vw, 320px)' : 'auto', // Match camera width
+          justifyContent: isMobile ? 'center' : 'flex-start'
+        }}>
+          <button onClick={() => setSceneState(s => s === 'CHAOS' ? 'FORMED' : 'CHAOS')} style={{
+            padding: isMobile ? '8px 0' : '12px 40px',
+            backgroundColor: 'rgba(255, 215, 0, 0.1)',
+            border: '2px solid rgba(255, 215, 0, 0.3)',
+            color: '#FFD700',
+            fontFamily: 'Times New Roman, serif',
+            fontSize: isMobile ? '12px' : '14px',
+            letterSpacing: '4px',
+            textTransform: 'uppercase',
+            cursor: 'pointer',
+            backdropFilter: 'blur(10px)',
+            transition: 'all 0.5s',
+            whiteSpace: 'nowrap',
+            width: isMobile ? '100%' : 'auto'
+          }}>
+            {sceneState === 'CHAOS' ? 'Assemble' : 'Disperse'}
+          </button>
+        </div>
       </div>
 
       {/* UI - AI Status */}
@@ -798,9 +965,7 @@ export default function GrandTreeApp() {
               transform: 'rotate(-2deg)',
               maxWidth: '90%',
               maxHeight: '90%',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '20px',
+              overflow: 'auto',
               position: 'relative'
             }}
           >
@@ -869,6 +1034,46 @@ export default function GrandTreeApp() {
           </div>
         </div>
       )}
+
+      {/* Upload Progress Toast */}
+      {isUploading && (
+        <div style={{
+          position: 'fixed',
+          bottom: '150px', // Above stats
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          backdropFilter: 'blur(10px)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '15px',
+          color: '#FFD700',
+          fontFamily: 'Avenir, sans-serif',
+          padding: '12px 24px',
+          borderRadius: '30px',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+          border: '1px solid rgba(255, 215, 0, 0.2)'
+        }}>
+          <div style={{
+            width: '20px',
+            height: '20px',
+            border: '2px solid rgba(255, 215, 0, 0.3)',
+            borderTop: '2px solid #FFD700',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+          }} />
+          <style>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+          <span style={{ fontSize: '14px', letterSpacing: '1px', fontWeight: 500 }}>
+            Uploading your memories...
+          </span>
+        </div>
+      )} 
     </div>
-  );
+  ); 
 }

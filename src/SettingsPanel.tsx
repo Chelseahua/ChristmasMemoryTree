@@ -7,6 +7,9 @@ interface SettingsPanelProps {
     onThemeChange: (theme: ThemePreset | 'custom') => void;
     customColors: ColorTheme;
     onCustomColorsChange: (colors: ColorTheme) => void;
+    isOpen: boolean;
+    onClose: () => void;
+    isMobile: boolean;
 }
 
 // Helper to convert Hex to HSL
@@ -72,8 +75,10 @@ export default function SettingsPanel({
     onThemeChange,
     customColors,
     onCustomColorsChange,
+    isOpen,
+    onClose,
+    isMobile,
 }: SettingsPanelProps) {
-    const [isOpen, setIsOpen] = useState(false);
     const [showColorPickers, setShowColorPickers] = useState(false);
     // Local state for sliders to avoid jitter, synced with customColors
     const [activeColorKey, setActiveColorKey] = useState<keyof ColorTheme | null>(null);
@@ -96,51 +101,57 @@ export default function SettingsPanel({
 
     return (
         <>
-            {/* Toggle Button */}
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                style={{
-                    position: 'fixed',
-                    top: '40px',
-                    left: isOpen ? '300px' : '40px',
-                    zIndex: 300,
-                    padding: '12px 16px',
-                    backgroundColor: 'rgba(255, 215, 0, 0.1)',
-                    border: '1px solid rgba(255, 215, 0, 0.3)',
-                    color: '#FFD700',
-                    fontFamily: 'Times New Roman, serif',
-                    fontSize: '14px',
-                    cursor: 'pointer',
-                    textTransform: 'uppercase',
-                    backdropFilter: 'blur(10px)',
-                    transition: 'all 0.3s ease',
-                    letterSpacing: '4px', //
-                    borderRadius: '4px',
-                }}
-            >
-                {isOpen ? '✕' : '⚙️ Customize'}
-            </button>
+            {/* Toggle Button Removed - Moved to App.tsx */}
 
             {/* Settings Panel */}
             <div
                 style={{
                     position: 'fixed',
-                    top: 0,
+                    top: isMobile ? 'auto' : 0,
+                    bottom: isMobile ? 0 : 'auto',
                     left: 0,
-                    width: '340px',
-                    height: '100vh',
+                    width: isMobile ? '100%' : '340px',
+                    height: isMobile ? '60vh' : '100vh',
                     backgroundColor: 'rgba(0, 0, 0, 0.85)',
                     backdropFilter: 'blur(20px)',
-                    borderRight: '1px solid rgba(255, 215, 0, 0.2)',
-                    padding: '80px 20px 20px 20px',
+                    borderRight: isMobile ? 'none' : '1px solid rgba(255, 215, 0, 0.2)',
+                    borderTop: isMobile ? '1px solid rgba(255, 215, 0, 0.2)' : 'none',
+                    padding: '20px',
+                    paddingTop: isMobile ? '20px' : '80px',
                     zIndex: 250,
-                    transform: isOpen ? 'translateX(0)' : 'translateX(-100%)',
+                    transform: isOpen
+                        ? (isMobile ? 'translateY(0)' : 'translateX(0)')
+                        : (isMobile ? 'translateY(100%)' : 'translateX(-100%)'),
                     transition: 'transform 0.3s ease',
                     overflowY: 'auto',
                     color: '#DDD',
                     fontFamily: 'Avenir, sans-serif',
+                    borderTopLeftRadius: isMobile ? '20px' : '0',
+                    borderTopRightRadius: isMobile ? '20px' : '0',
+                    boxSizing: 'border-box',
                 }}
             >
+                {/* Close Button for Mobile */}
+                {isMobile && (
+                    <button
+                        onClick={onClose}
+                        style={{
+                            position: 'absolute',
+                            top: '15px',
+                            right: '15px',
+                            background: 'transparent',
+                            border: 'none',
+                            color: '#666',
+                            fontSize: '24px',
+                            cursor: 'pointer',
+                            padding: '5px',
+                            lineHeight: 1,
+                            zIndex: 260
+                        }}
+                    >
+                        ✕
+                    </button>
+                )}
                 {/* Color Themes Section */}
                 <div>
                     <h3 style={{ color: '#FFD700', fontSize: '20px', letterSpacing: '2px', marginBottom: '20px' }}>
@@ -326,7 +337,7 @@ export default function SettingsPanel({
             {/* Overlay when open */}
             {isOpen && (
                 <div
-                    onClick={() => setIsOpen(false)}
+                    onClick={onClose}
                     style={{
                         position: 'fixed',
                         top: 0,
