@@ -649,6 +649,12 @@ export default function GrandTreeApp() {
 
   // Responsive state
   const [isMobile, setIsMobile] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowInstructions(false), 5000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -775,13 +781,33 @@ export default function GrandTreeApp() {
         }}>
           Merry<br />Christmas
         </h1>
+
+      </div>
+
+      {/* Instructions Toast */}
+      <div style={{
+        position: 'fixed',
+        top: '100px', // Below the customize button
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 20,
+        pointerEvents: 'none',
+        textAlign: 'center',
+        opacity: showInstructions ? 1 : 0,
+        transition: 'opacity 1s ease-in-out',
+        width: 'max-content',
+      }}>
         <p style={{
           fontFamily: 'Avenir, sans-serif',
           fontSize: isMobile ? '14px' : '16px',
-          color: 'rgba(255, 255, 255, 0.8)',
-          marginTop: '10px',
+          color: 'rgba(255, 255, 255, 0.9)',
+          margin: 0,
           fontStyle: 'italic',
-          textShadow: '0 2px 4px rgba(0,0,0,0.5)'
+          textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+          padding: '8px 16px',
+          backgroundColor: 'rgba(0,0,0,0.2)',
+          borderRadius: '20px',
+          backdropFilter: 'blur(4px)'
         }}>
           Try open, close, and move your palm
         </p>
@@ -944,136 +970,140 @@ export default function GrandTreeApp() {
 
 
       {/* UI - Photo Detail Card Overlay */}
-      {selectedPhotoIndex !== null && (
-        <div style={{
-          position: 'fixed',
-          top: 0, left: 0, width: '100%', height: '100%',
-          backgroundColor: 'rgba(0,0,0,0.8)',
-          zIndex: 200,
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          backdropFilter: 'blur(5px)'
-        }} onClick={() => setSelectedPhotoIndex(null)}>
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{
-              backgroundColor: '#FDFBF7',
-              padding: '20px 20px 60px 20px',
-              borderRadius: '2px',
-              boxShadow: '0 0 50px rgba(0,0,0,0.5)',
-              transform: 'rotate(-2deg)',
-              maxWidth: '90%',
-              maxHeight: '90%',
-              overflow: 'auto',
-              position: 'relative'
-            }}
-          >
-            <img
-              src={photos[selectedPhotoIndex]}
-              alt="Memory"
+      {
+        selectedPhotoIndex !== null && (
+          <div style={{
+            position: 'fixed',
+            top: 0, left: 0, width: '100%', height: '100%',
+            backgroundColor: 'rgba(0,0,0,0.8)',
+            zIndex: 200,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            backdropFilter: 'blur(5px)'
+          }} onClick={() => setSelectedPhotoIndex(null)}>
+            <div
+              onClick={e => e.stopPropagation()}
               style={{
-                maxWidth: '400px',
-                maxHeight: '50vh',
-                objectFit: 'cover',
-                border: '1px solid #eee'
-              }}
-            />
-            <div style={{ position: 'relative', minHeight: '120px' /* Ensure whitespace */ }}>
-              <textarea
-                value={memos[selectedPhotoIndex] || ''}
-                onChange={handleMemoChange}
-                placeholder="Write a memory..."
-                style={{
-                  width: '100%',
-                  height: '100px',
-                  border: 'none',
-                  backgroundColor: 'transparent',
-                  fontFamily: '"Brush Script MT", cursive',
-                  fontSize: '24px',
-                  color: '#333',
-                  resize: 'none',
-                  outline: 'none',
-                  textAlign: 'center',
-                  lineHeight: '1.5'
-                }}
-              />
-              <div style={{
-                position: 'absolute',
-                bottom: '-20px',
-                right: '0',
-                fontSize: '12px',
-                color: '#999',
-                fontFamily: 'sans-serif'
-              }}>
-                {memos[selectedPhotoIndex] ? 'Saved' : 'Click to write'}
-              </div>
-            </div>
-            <button
-              onClick={() => setSelectedPhotoIndex(null)}
-              style={{
-                position: 'absolute',
-                top: '-15px',
-                right: '-15px',
-                width: '30px',
-                height: '30px',
-                borderRadius: '50%',
-                backgroundColor: '#333',
-                color: '#fff',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '16px',
-                zIndex: 20
+                backgroundColor: '#FDFBF7',
+                padding: '20px 20px 60px 20px',
+                borderRadius: '2px',
+                boxShadow: '0 0 50px rgba(0,0,0,0.5)',
+                transform: 'rotate(-2deg)',
+                maxWidth: '90%',
+                maxHeight: '90%',
+                overflow: 'auto',
+                position: 'relative'
               }}
             >
-              ×
-            </button>
+              <img
+                src={photos[selectedPhotoIndex]}
+                alt="Memory"
+                style={{
+                  maxWidth: '400px',
+                  maxHeight: '50vh',
+                  objectFit: 'cover',
+                  border: '1px solid #eee'
+                }}
+              />
+              <div style={{ position: 'relative', minHeight: '120px' /* Ensure whitespace */ }}>
+                <textarea
+                  value={memos[selectedPhotoIndex] || ''}
+                  onChange={handleMemoChange}
+                  placeholder="Write a memory..."
+                  style={{
+                    width: '100%',
+                    height: '100px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    fontFamily: '"Brush Script MT", cursive',
+                    fontSize: '24px',
+                    color: '#333',
+                    resize: 'none',
+                    outline: 'none',
+                    textAlign: 'center',
+                    lineHeight: '1.5'
+                  }}
+                />
+                <div style={{
+                  position: 'absolute',
+                  bottom: '-20px',
+                  right: '0',
+                  fontSize: '12px',
+                  color: '#999',
+                  fontFamily: 'sans-serif'
+                }}>
+                  {memos[selectedPhotoIndex] ? 'Saved' : 'Click to write'}
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedPhotoIndex(null)}
+                style={{
+                  position: 'absolute',
+                  top: '-15px',
+                  right: '-15px',
+                  width: '30px',
+                  height: '30px',
+                  borderRadius: '50%',
+                  backgroundColor: '#333',
+                  color: '#fff',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '16px',
+                  zIndex: 20
+                }}
+              >
+                ×
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Upload Progress Toast */}
-      {isUploading && (
-        <div style={{
-          position: 'fixed',
-          bottom: '150px', // Above stats
-          left: '50%',
-          transform: 'translateX(-50%)',
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          backdropFilter: 'blur(10px)',
-          zIndex: 1000,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '15px',
-          color: '#FFD700',
-          fontFamily: 'Avenir, sans-serif',
-          padding: '12px 24px',
-          borderRadius: '30px',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
-          border: '1px solid rgba(255, 215, 0, 0.2)'
-        }}>
+      {
+        isUploading && (
           <div style={{
-            width: '20px',
-            height: '20px',
-            border: '2px solid rgba(255, 215, 0, 0.3)',
-            borderTop: '2px solid #FFD700',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-          }} />
-          <style>{`
+            position: 'fixed',
+            bottom: '150px', // Above stats
+            left: '50%',
+            transform: 'translateX(-50%)',
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            backdropFilter: 'blur(10px)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '15px',
+            color: '#FFD700',
+            fontFamily: 'Avenir, sans-serif',
+            padding: '12px 24px',
+            borderRadius: '30px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+            border: '1px solid rgba(255, 215, 0, 0.2)'
+          }}>
+            <div style={{
+              width: '20px',
+              height: '20px',
+              border: '2px solid rgba(255, 215, 0, 0.3)',
+              borderTop: '2px solid #FFD700',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+            }} />
+            <style>{`
             @keyframes spin {
               0% { transform: rotate(0deg); }
               100% { transform: rotate(360deg); }
             }
           `}</style>
-          <span style={{ fontSize: '14px', letterSpacing: '1px', fontWeight: 500 }}>
-            Uploading your memories...
-          </span>
-        </div>
-      )} 
-    </div>
-  ); 
+            <span style={{ fontSize: '14px', letterSpacing: '1px', fontWeight: 500 }}>
+              Uploading your memories...
+            </span>
+          </div>
+        )
+      }
+    </div >
+  );
 }
