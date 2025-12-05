@@ -553,11 +553,14 @@ const GestureController = ({ onGesture, onMove, onStatus }: any) => {
       if (gestureRecognizer && videoRef.current && videoRef.current.readyState === 4) {
         try {
           const results = gestureRecognizer.recognizeForVideo(videoRef.current, Date.now());
-          const ctx = canvasRef.current.getContext("2d");
+          const canvas = canvasRef.current;
+          if (!canvas) return;
+
+          const ctx = canvas.getContext("2d");
           // Always draw debug info
           if (ctx) {
-            ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-            canvasRef.current.width = videoRef.current.videoWidth; canvasRef.current.height = videoRef.current.videoHeight;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            canvas.width = videoRef.current.videoWidth; canvas.height = videoRef.current.videoHeight;
             if (results.landmarks) for (const landmarks of results.landmarks) {
               const drawingUtils = new DrawingUtils(ctx);
               drawingUtils.drawConnectors(landmarks, GestureRecognizer.HAND_CONNECTIONS, { color: "#FFD700", lineWidth: 2 });
