@@ -167,7 +167,8 @@ const PhotoOrnaments = ({ state, photos, onPhotoClick, config }: {
 }) => {
   const textures = useTexture(photos);
   // Limit visible photos to available textures or config count
-  const count = Math.min(config.counts.ornaments, textures.length);
+  // In CHAOS mode, show ALL photos. In FORMED mode, limit to config count (50).
+  const count = state === 'CHAOS' ? textures.length : Math.min(config.counts.ornaments, textures.length);
   const groupRef = useRef<THREE.Group>(null);
 
   // Polaroid dimensions
@@ -175,25 +176,73 @@ const PhotoOrnaments = ({ state, photos, onPhotoClick, config }: {
   const photoGeometry = useMemo(() => new THREE.PlaneGeometry(1, 1), []);
 
   const data = useMemo(() => {
-    return new Array(count).fill(0).map((_, i) => {
+    const generatedData: any[] = [];
+    const positions: THREE.Vector3[] = [];
+    const minDistance = 2.5; // Minimum distance between photos to avoid overlap
+
+    for (let i = 0; i < count; i++) {
       const chaosPos = new THREE.Vector3((Math.random() - 0.5) * 50, (Math.random() - 0.5) * 50, (Math.random() - 0.5) * 50);
 
-      // Tree position - slightly tucked in
-      const h = config.tree.height;
+      let targetPos = new THREE.Vector3();
+      let bestPos = new THREE.Vector3();
+      let maxDistToClosest = -1;
 
-      // Adjusted for visually uniform distribution on cone (avoiding top crowding)
-      const minY = -h / 2.2;
-      const maxY = h / 3;
-      // Power > 1 biases towards minY (bottom), matching the cone's larger surface area at the bottom
-      const y = minY + (maxY - minY) * Math.pow(Math.random(), 2.2);
-      const rBase = config.tree.radius;
-      const normalizedY = (y + (h / 2)) / h;
-      const currentRadius = rBase * (1 - normalizedY);
+      // Try to find a position that doesn't overlap with existing ones
+      // We try multiple times and pick the best one if we can't find a perfect one
+      for (let attempt = 0; attempt < 20; attempt++) {
+        // Tree position - slightly tucked in
+        const h = config.tree.height;
 
-      // Place slightly outside the main sphere volume to be visible but integrated
-      const r = currentRadius + 0.5;
-      const theta = Math.random() * Math.PI * 2;
-      const targetPos = new THREE.Vector3(r * Math.cos(theta), y, r * Math.sin(theta));
+        // Adjusted for visually uniform distribution on cone (avoiding top crowding)
+        const minY = -h / 2.2;
+        const maxY = h / 3;
+
+        // Use a more uniform distribution for the cone surface
+        // Sampling from top (apex) to bottom
+        // r is proportional to distance from apex. Area is proportional to r^2.
+        // So we sample r proportional to sqrt(random).
+        // Let's keep the existing logic but refine it slightly for better spread
+        const y = minY + (maxY - minY) * Math.pow(Math.random(), 1.5); // Reduced power for slightly more even spread
+
+        const rBase = config.tree.radius;
+        const normalizedY = (y + (h / 2)) / h;
+        const currentRadius = rBase * (1 - normalizedY);
+
+        // Place slightly outside the main sphere volume to be visible but integrated
+        const r = currentRadius + 0.5;
+        const theta = Math.random() * Math.PI * 2;
+
+        const candidatePos = new THREE.Vector3(r * Math.cos(theta), y, r * Math.sin(theta));
+
+        // Check distance to all existing positions
+        let minDist = 1000;
+        if (positions.length > 0) {
+          for (const p of positions) {
+            const d = candidatePos.distanceTo(p);
+            if (d < minDist) minDist = d;
+          }
+        } else {
+          minDist = 1000;
+        }
+
+        if (minDist > minDistance) {
+          targetPos = candidatePos;
+          break; // Found a good spot
+        }
+
+        // Keep track of the best "bad" spot just in case
+        if (minDist > maxDistToClosest) {
+          maxDistToClosest = minDist;
+          bestPos = candidatePos;
+        }
+      }
+
+      // If we didn't find a perfect spot, use the best one we found
+      if (targetPos.lengthSq() === 0) {
+        targetPos = bestPos;
+      }
+
+      positions.push(targetPos);
 
       const rotationSpeed = {
         x: (Math.random() - 0.5) * 0.5,
@@ -202,15 +251,16 @@ const PhotoOrnaments = ({ state, photos, onPhotoClick, config }: {
       };
       const chaosRotation = new THREE.Euler(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
 
-      return {
+      generatedData.push({
         chaosPos, targetPos,
         textureIndex: i % textures.length,
         currentPos: chaosPos.clone(),
         chaosRotation,
         rotationSpeed,
-        scale: 1 // Default scale
-      };
-    });
+        scale: 2 // Increased scale
+      });
+    }
+    return generatedData;
   }, [textures, count, config]);
 
   useFrame((stateObj, delta) => {
@@ -223,6 +273,12 @@ const PhotoOrnaments = ({ state, photos, onPhotoClick, config }: {
 
       objData.currentPos.lerp(target, delta * 2.0);
       group.position.copy(objData.currentPos);
+
+      // Dynamic Scale based on state
+      const targetScale = isFormed ? 2 : 4; // Larger in chaos mode
+      const currentScale = group.scale.x;
+      const newScale = THREE.MathUtils.lerp(currentScale, targetScale, delta * 3);
+      group.scale.setScalar(newScale);
 
       if (isFormed) {
         // Look at center but flip to face outward correctly
@@ -243,7 +299,7 @@ const PhotoOrnaments = ({ state, photos, onPhotoClick, config }: {
       {data.map((obj, i) => (
         <group
           key={i}
-          scale={[obj.scale, obj.scale, obj.scale]}
+          scale={[2, 2, 2]} // Initial scale, will be updated by useFrame
           rotation={state === 'CHAOS' ? obj.chaosRotation : [0, 0, 0]}
           onClick={(e) => { e.stopPropagation(); onPhotoClick(i); }}
           onPointerOver={() => { document.body.style.cursor = 'pointer'; }}
@@ -1102,8 +1158,22 @@ export default function GrandTreeApp() {
               Uploading your memories...
             </span>
           </div>
-        )
-      }
-    </div >
+        )}
+      {/* Footer Credit */}
+      <div style={{
+        position: 'absolute',
+        bottom: '10px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        color: 'rgba(255, 255, 255, 0.5)',
+        fontSize: '10px',
+        fontFamily: 'sans-serif',
+        pointerEvents: 'none',
+        zIndex: 10,
+        whiteSpace: 'nowrap'
+      }}>
+        Created by Chelsea Hua 🩵
+      </div>
+    </div>
   );
 }
