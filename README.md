@@ -6,7 +6,10 @@ Christmas Memory Tree is an immersive WebGL experience that lets users upload pe
 
 ## 🎥 Demo
 
-[![Watch on YouTube](https://img.shields.io/badge/Watch%20Demo-YouTube-red?logo=youtube)](https://youtu.be/tDUNL6PusUA)
+Click the thumbnail below to watch the full video demo on YouTube:
+
+[![Christmas Memory Tree Demo](https://img.youtube.com/vi/tDUNL6PusUA/0.jpg)](https://youtu.be/tDUNL6PusUA)
+
 
 
 ✨ Features
