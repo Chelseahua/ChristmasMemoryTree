@@ -48,4 +48,9 @@ Designed & Developed by Chelsea Hua
 
 “Every photo is a story — let your memories shine this Christmas.” ✨
 
+## License
+This project is open-source under the MIT License.  
+If you use or remix this project, attribution is appreciated! ⭐
+
+
 
