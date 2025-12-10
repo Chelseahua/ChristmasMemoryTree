@@ -5,15 +5,8 @@ A magical 3D holiday gift experience — decorate a Christmas tree with your own
 Christmas Memory Tree is an immersive WebGL experience that lets users upload personal photos, customize ornaments and lighting themes, and build a beautifully unique memory tree to share with loved ones for the holidays. 🎁✨
 
 ## 🎥 Demo
-<div align="center">
-
-[![Christmas Memory Tree Demo](https://img.youtube.com/vi/tDUNL6PusUA/hqdefault.jpg)](https://youtu.be/tDUNL6PusUA)
-
-<br>
 
 [![Watch on YouTube](https://img.shields.io/badge/Watch%20Demo-YouTube-red?logo=youtube)](https://youtu.be/tDUNL6PusUA)
-
-</div>
 
 
 ✨ Features
